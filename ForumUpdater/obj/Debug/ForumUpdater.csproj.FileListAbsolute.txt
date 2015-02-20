@@ -1,0 +1,9 @@
+c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater\bin\Debug\ForumUpdater.exe
+c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater\bin\Debug\ForumUpdater.pdb
+c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater\bin\Debug\Newtonsoft.Json.dll
+c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater\bin\Debug\nunit.framework.dll
+c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater\bin\Debug\Newtonsoft.Json.xml
+c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater\bin\Debug\nunit.framework.xml
+c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater\obj\Debug\ForumUpdater.csprojResolveAssemblyReference.cache
+c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater\obj\Debug\ForumUpdater.exe
+c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater\obj\Debug\ForumUpdater.pdb
