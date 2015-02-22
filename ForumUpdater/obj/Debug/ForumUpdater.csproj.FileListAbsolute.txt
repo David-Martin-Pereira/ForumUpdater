@@ -7,3 +7,5 @@ c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater
 c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater\obj\Debug\ForumUpdater.csprojResolveAssemblyReference.cache
 c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater\obj\Debug\ForumUpdater.exe
 c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater\obj\Debug\ForumUpdater.pdb
+D:\COMPARTIDO\Trabajo\SYMANTO\Programming\C#\ForumUpdater\ForumUpdater\obj\Debug\ForumUpdater.exe
+D:\COMPARTIDO\Trabajo\SYMANTO\Programming\C#\ForumUpdater\ForumUpdater\obj\Debug\ForumUpdater.pdb

@@ -114,6 +114,7 @@ namespace ForumUpdater
                 _url += "&cursor=" + _results.Cursor.Next;
 
                 // ReSharper disable once AssignNullToNotNullAttribute
+                
                 _result = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
                 _results = JsonConvert.DeserializeObject<DisqusModel>(_result.ReadToEnd());
             }
