@@ -14,7 +14,7 @@ namespace ForumUpdater
         private const string FileForums = "../../Forums.txt";
         private static string _url = "https://disqus.com/api/3.0/threads/list.json?api_key=ytwDh9f4ndTA027jIPzMAFC0hXdeyEEwOsKjujADneiRl2SUdjUpQ40bEXDMhupa&limit=100";
 
-
+        private static int requestCounter;
         private static string firstCursor;
         private static string lastCursor;
         private static StreamReader _streamResult;
@@ -54,6 +54,8 @@ namespace ForumUpdater
 
         private static bool PrepareDictionary()
         {
+            requestCounter = 0;
+
             var result = true;
 
             var cursors = File.ReadAllLines(FileCursors);
@@ -65,6 +67,7 @@ namespace ForumUpdater
 
             // ReSharper disable once AssignNullToNotNullAttribute
             _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+            Console.WriteLine("Requests --->"+requestCounter++);
 
             _jsonString = _streamResult.ReadToEnd();
 
@@ -123,6 +126,9 @@ namespace ForumUpdater
 
                 _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
                 _results = JsonConvert.DeserializeObject<DisqusModel>(_streamResult.ReadToEnd());
+
+                Console.WriteLine("Requests --->" + requestCounter++);
+                Console.WriteLine("Updating previous cursors");
             }
 
             //reemplazo del parámetro "cursor"
@@ -130,7 +136,7 @@ namespace ForumUpdater
 
             _url += "&cursor=" + lastCursor;
 
-
+            Console.WriteLine("Present time reached. Updating next cursors");
             //actualización de los cursores hacia delante
             // ReSharper disable once LoopVariableIsNeverChangedInsideLoop
             while (_results.Cursor.HasNext)
@@ -160,6 +166,9 @@ namespace ForumUpdater
                 
                 _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
                 _results = JsonConvert.DeserializeObject<DisqusModel>(_streamResult.ReadToEnd());
+
+                Console.WriteLine("Requests --->" + requestCounter++);
+                Console.WriteLine("Updating next cursors");
             }
         }
         

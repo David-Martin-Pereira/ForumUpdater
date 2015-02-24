@@ -9,3 +9,12 @@ c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater
 c:\users\dmartin\documents\visual studio 2013\Projects\ForumUpdater\ForumUpdater\obj\Debug\ForumUpdater.pdb
 D:\COMPARTIDO\Trabajo\SYMANTO\Programming\C#\ForumUpdater\ForumUpdater\obj\Debug\ForumUpdater.exe
 D:\COMPARTIDO\Trabajo\SYMANTO\Programming\C#\ForumUpdater\ForumUpdater\obj\Debug\ForumUpdater.pdb
+D:\COMPARTIDO\Trabajo\Programacion-Proyectos personales\c#\ForumUpdater\ForumUpdater\obj\Debug\ForumUpdater.exe
+D:\COMPARTIDO\Trabajo\Programacion-Proyectos personales\c#\ForumUpdater\ForumUpdater\obj\Debug\ForumUpdater.pdb
+D:\COMPARTIDO\Trabajo\Programacion-Proyectos personales\c#\ForumUpdater\ForumUpdater\bin\Debug\ForumUpdater.exe
+D:\COMPARTIDO\Trabajo\Programacion-Proyectos personales\c#\ForumUpdater\ForumUpdater\bin\Debug\ForumUpdater.pdb
+D:\COMPARTIDO\Trabajo\Programacion-Proyectos personales\c#\ForumUpdater\ForumUpdater\bin\Debug\Newtonsoft.Json.dll
+D:\COMPARTIDO\Trabajo\Programacion-Proyectos personales\c#\ForumUpdater\ForumUpdater\bin\Debug\nunit.framework.dll
+D:\COMPARTIDO\Trabajo\Programacion-Proyectos personales\c#\ForumUpdater\ForumUpdater\bin\Debug\Newtonsoft.Json.xml
+D:\COMPARTIDO\Trabajo\Programacion-Proyectos personales\c#\ForumUpdater\ForumUpdater\bin\Debug\nunit.framework.xml
+D:\COMPARTIDO\Trabajo\Programacion-Proyectos personales\c#\ForumUpdater\ForumUpdater\obj\Debug\ForumUpdater.csprojResolveAssemblyReference.cache
