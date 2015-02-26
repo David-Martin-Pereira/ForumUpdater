@@ -70,9 +70,18 @@ namespace ForumUpdater
             lastCursor = cursors.Last();
 
             _url += "&cursor=" + firstCursor;
-
-            // ReSharper disable once AssignNullToNotNullAttribute
-            _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+            
+            try
+            {
+                _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.ReadLine();
+                Environment.Exit(1);
+            }
+            
             Console.WriteLine("Requests --->"+requestCounter++);
 
             _jsonString = _streamResult.ReadToEnd();
@@ -105,7 +114,20 @@ namespace ForumUpdater
         private static void UpdateForum()
         {
             //actualización de los 100 foros más interesantes de esta semana (por número de posts)
-            var _streamResultInteresting = new StreamReader(WebRequest.Create(_urlInteresting).GetResponse().GetResponseStream());
+
+            StreamReader _streamResultInteresting=null;
+
+            try
+            {
+                _streamResultInteresting = new StreamReader(WebRequest.Create(_urlInteresting).GetResponse().GetResponseStream());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.ReadLine();
+                Environment.Exit(1);
+            }
+            
             Console.WriteLine("Requests --->" + requestCounter++);
 
             var jsonStringInteresting = _streamResultInteresting.ReadToEnd();
@@ -162,9 +184,17 @@ namespace ForumUpdater
 
                 _url += "&cursor=" + _results.Cursor.Prev;
 
-                // ReSharper disable once AssignNullToNotNullAttribute
-
-                _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+                try
+                {
+                    _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                    Console.ReadLine();
+                    Environment.Exit(1);
+                }
+                
                 _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
 
                 Console.WriteLine("Requests --->" + requestCounter++);
@@ -178,7 +208,6 @@ namespace ForumUpdater
 
             Console.WriteLine("Present time reached. Updating next cursors");
             //actualización de los cursores hacia delante
-            // ReSharper disable once LoopVariableIsNeverChangedInsideLoop
             while ((bool)_results.Cursor.HasNext)
             {
 
@@ -202,9 +231,18 @@ namespace ForumUpdater
 
                 _url += "&cursor=" + _results.Cursor.Next;
 
-                // ReSharper disable once AssignNullToNotNullAttribute
+                try
+                {
+                    _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                    Console.ReadLine();
+                    Environment.Exit(1);
+                }
+
                 
-                _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
                 _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
 
                 Console.WriteLine("Requests --->" + requestCounter++);
