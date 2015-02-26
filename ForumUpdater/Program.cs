@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace ForumUpdater
 {
@@ -14,12 +16,16 @@ namespace ForumUpdater
         private const string FileForums = "../../Forums.txt";
         private static string _url = "https://disqus.com/api/3.0/threads/list.json?api_key=ytwDh9f4ndTA027jIPzMAFC0hXdeyEEwOsKjujADneiRl2SUdjUpQ40bEXDMhupa&limit=100";
 
+        private static string _urlInteresting =
+            "https://disqus.com/api/3.0/forums/interestingForums.json?api_key=ytwDh9f4ndTA027jIPzMAFC0hXdeyEEwOsKjujADneiRl2SUdjUpQ40bEXDMhupa&limit=100";
+
         private static int requestCounter;
         private static string firstCursor;
         private static string lastCursor;
         private static StreamReader _streamResult;
         private static string _jsonString;
-        private static DisqusModel _results;
+        private static DisqusModel<IEnumerable<DisqusFeed>> _results;
+        private static DisqusModel<InterestingForums> _resultsInteresting; 
         private static Dictionary<string, string> _forumDictionary;
         private static String[] _forumFileLines;
 
@@ -54,7 +60,7 @@ namespace ForumUpdater
 
         private static bool PrepareDictionary()
         {
-            requestCounter = 0;
+            requestCounter = 1;
 
             var result = true;
 
@@ -71,7 +77,7 @@ namespace ForumUpdater
 
             _jsonString = _streamResult.ReadToEnd();
 
-            _results = JsonConvert.DeserializeObject<DisqusModel>(_jsonString);
+            _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_jsonString);
 
             _forumDictionary = new Dictionary<string, string>();
 
@@ -98,8 +104,42 @@ namespace ForumUpdater
 
         private static void UpdateForum()
         {
+            //actualización de los 100 foros más interesantes de esta semana (por número de posts)
+            var _streamResultInteresting = new StreamReader(WebRequest.Create(_urlInteresting).GetResponse().GetResponseStream());
+            Console.WriteLine("Requests --->" + requestCounter++);
+
+            var jsonStringInteresting = _streamResultInteresting.ReadToEnd();
+
+            var _resultsInteresting = JsonConvert.DeserializeObject<DisqusModel<InterestingForums>>(jsonStringInteresting);
+
+            var innerJson = _resultsInteresting.Response.Objects;
+
+            var jo = JObject.Parse(innerJson.ToString());
+
+            var children = jo.Children();
+
+            foreach (var child in children)
+            {
+                foreach (var properties in child)
+                {
+                    var forum = properties.SelectToken("id").ToString();
+                    var link = properties.SelectToken("url").ToString();
+
+                    if (!_forumDictionary.ContainsKey(forum))
+                    {
+                        _forumDictionary.Add(forum,link);
+
+                        Console.WriteLine(link+" "+forum);
+
+                        File.AppendAllLines(FileForums,new []{FixSemiColon(link)+";"+forum});
+                    }
+                }
+            }
+
+
+
             //actualización de los cursores hacia atrás
-            while (_results.Cursor.HasPrev)
+            while ((bool)_results.Cursor.HasPrev)
             {
                 foreach (var feed in _results.Response)
                 {
@@ -125,7 +165,7 @@ namespace ForumUpdater
                 // ReSharper disable once AssignNullToNotNullAttribute
 
                 _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
-                _results = JsonConvert.DeserializeObject<DisqusModel>(_streamResult.ReadToEnd());
+                _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
 
                 Console.WriteLine("Requests --->" + requestCounter++);
                 Console.WriteLine("Updating previous cursors");
@@ -139,7 +179,7 @@ namespace ForumUpdater
             Console.WriteLine("Present time reached. Updating next cursors");
             //actualización de los cursores hacia delante
             // ReSharper disable once LoopVariableIsNeverChangedInsideLoop
-            while (_results.Cursor.HasNext)
+            while ((bool)_results.Cursor.HasNext)
             {
 
                 foreach (var feed in _results.Response)
@@ -165,7 +205,7 @@ namespace ForumUpdater
                 // ReSharper disable once AssignNullToNotNullAttribute
                 
                 _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
-                _results = JsonConvert.DeserializeObject<DisqusModel>(_streamResult.ReadToEnd());
+                _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
 
                 Console.WriteLine("Requests --->" + requestCounter++);
                 Console.WriteLine("Updating next cursors");

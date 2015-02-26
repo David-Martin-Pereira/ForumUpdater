@@ -1,15 +1,17 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace ForumUpdater
 {
-    public struct DisqusModel
+    public struct DisqusModel<T>
     {
         public DisqusCursor Cursor;
         //public IEnumerable<DisqusComment> Response;
-        public IEnumerable<DisqusFeed> Response;
+        public T Response;
         //public string Response;
         public int Code;//error code
     }
@@ -39,18 +41,31 @@ namespace ForumUpdater
 
     public struct DisqusCursor
     {
-        public string Prev;
-        public bool HasNext;
-        public string Next;
-        public bool HasPrev;
-        public string Total;
-        public string Id;
-        public bool More;
+        public String Prev;
+        public bool? HasNext;
+        public String Next;
+        public bool? HasPrev;
+        public String Total;
+        public String Id;
+        public bool? More;
     }
 
     public struct DisqusFeed
     {
         public string Link;
         public string Forum;
+    }
+
+    
+    public struct InterestingForums
+    {
+        public List<DisqusItem> Items;
+        public Object Objects;
+    }
+
+    public struct DisqusItem
+    {
+        public string Reason;
+        public string Id;
     }
 }
