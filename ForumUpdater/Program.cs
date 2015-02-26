@@ -12,20 +12,18 @@ namespace ForumUpdater
 {
     public static class Program
     {
-        private const string FileCursors = "../../Cursors.txt";
+        private const string FileCursors = "../../Cursors - 2.txt";
         private const string FileForums = "../../Forums.txt";
         private static string _url = "https://disqus.com/api/3.0/threads/list.json?api_key=ytwDh9f4ndTA027jIPzMAFC0hXdeyEEwOsKjujADneiRl2SUdjUpQ40bEXDMhupa&limit=100";
 
-        private static string _urlInteresting =
-            "https://disqus.com/api/3.0/forums/interestingForums.json?api_key=ytwDh9f4ndTA027jIPzMAFC0hXdeyEEwOsKjujADneiRl2SUdjUpQ40bEXDMhupa&limit=100";
+        private const string UrlInteresting = "https://disqus.com/api/3.0/forums/interestingForums.json?api_key=ytwDh9f4ndTA027jIPzMAFC0hXdeyEEwOsKjujADneiRl2SUdjUpQ40bEXDMhupa&limit=100";
 
-        private static int requestCounter;
-        private static string firstCursor;
-        private static string lastCursor;
+        private static int _requestCounter;
+        private static string _firstCursor;
+        private static string _lastCursor;
         private static StreamReader _streamResult;
         private static string _jsonString;
         private static DisqusModel<IEnumerable<DisqusFeed>> _results;
-        private static DisqusModel<InterestingForums> _resultsInteresting; 
         private static Dictionary<string, string> _forumDictionary;
         private static String[] _forumFileLines;
 
@@ -60,16 +58,16 @@ namespace ForumUpdater
 
         private static bool PrepareDictionary()
         {
-            requestCounter = 1;
+            _requestCounter = 1;
 
             var result = true;
 
             var cursors = File.ReadAllLines(FileCursors);
 
-            firstCursor = cursors.First();
-            lastCursor = cursors.Last();
+            _firstCursor = cursors.First();
+            _lastCursor = cursors.Last();
 
-            _url += "&cursor=" + firstCursor;
+            _url += "&cursor=" + _firstCursor;
             
             try
             {
@@ -82,7 +80,7 @@ namespace ForumUpdater
                 Environment.Exit(1);
             }
             
-            Console.WriteLine("Requests --->"+requestCounter++);
+            Console.WriteLine("Requests --->"+_requestCounter++);
 
             _jsonString = _streamResult.ReadToEnd();
 
@@ -115,11 +113,11 @@ namespace ForumUpdater
         {
             //actualización de los 100 foros más interesantes de esta semana (por número de posts)
 
-            StreamReader _streamResultInteresting=null;
+            StreamReader streamResultInteresting = null;
 
             try
             {
-                _streamResultInteresting = new StreamReader(WebRequest.Create(_urlInteresting).GetResponse().GetResponseStream());
+                streamResultInteresting = new StreamReader(WebRequest.Create(UrlInteresting).GetResponse().GetResponseStream());
             }
             catch (Exception e)
             {
@@ -127,14 +125,14 @@ namespace ForumUpdater
                 Console.ReadLine();
                 Environment.Exit(1);
             }
-            
-            Console.WriteLine("Requests --->" + requestCounter++);
 
-            var jsonStringInteresting = _streamResultInteresting.ReadToEnd();
+            Console.WriteLine("Requests --->" + _requestCounter++);
 
-            var _resultsInteresting = JsonConvert.DeserializeObject<DisqusModel<InterestingForums>>(jsonStringInteresting);
+            var jsonStringInteresting = streamResultInteresting.ReadToEnd();
 
-            var innerJson = _resultsInteresting.Response.Objects;
+            var resultsInteresting = JsonConvert.DeserializeObject<DisqusModel<InterestingForums>>(jsonStringInteresting);
+
+            var innerJson = resultsInteresting.Response.Objects;
 
             var jo = JObject.Parse(innerJson.ToString());
 
@@ -149,19 +147,17 @@ namespace ForumUpdater
 
                     if (!_forumDictionary.ContainsKey(forum))
                     {
-                        _forumDictionary.Add(forum,link);
+                        _forumDictionary.Add(forum, link);
 
-                        Console.WriteLine(link+" "+forum);
+                        Console.WriteLine(link + " " + forum);
 
-                        File.AppendAllLines(FileForums,new []{FixSemiColon(link)+";"+forum});
+                        File.AppendAllLines(FileForums, new[] { FixSemiColon(link) + ";" + forum });
                     }
                 }
             }
 
-
-
             //actualización de los cursores hacia atrás
-            while ((bool)_results.Cursor.HasPrev)
+            while (_results.Cursor.HasPrev != null && (bool)_results.Cursor.HasPrev)
             {
                 foreach (var feed in _results.Response)
                 {
@@ -177,7 +173,8 @@ namespace ForumUpdater
                 }
 
                 //reescritura del nuevo cursor hacia arriba (es previo)
-                File.WriteAllText(FileCursors,_results.Cursor.Id+"\n"+File.ReadAllText(FileCursors));
+                if (!_firstCursor.Contains(_results.Cursor.Prev.Substring(0, _results.Cursor.Prev.Length - 1)))
+                    File.WriteAllText(FileCursors,_results.Cursor.Prev.Substring(0,_results.Cursor.Prev.Length-1)+"0"+"\n"+File.ReadAllText(FileCursors));
 
                 //reemplazo del parámetro "cursor"
                 _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
@@ -197,19 +194,41 @@ namespace ForumUpdater
                 
                 _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
 
-                Console.WriteLine("Requests --->" + requestCounter++);
+                Console.WriteLine("Requests --->" + _requestCounter++);
                 Console.WriteLine("Updating previous cursors");
             }
 
             //reemplazo del parámetro "cursor"
             _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
 
-            _url += "&cursor=" + lastCursor;
+            _url += "&cursor=" + _lastCursor;
+
 
             Console.WriteLine("Present time reached. Updating next cursors");
-            //actualización de los cursores hacia delante
-            while ((bool)_results.Cursor.HasNext)
+
+            try
             {
+                _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.ReadLine();
+                Environment.Exit(1);
+            }
+
+            _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
+
+            
+            //actualización de los cursores hacia delante (del archivo Cursors - 2.txt, cuando alcance al primero del siguiente pararemos)
+            while (_results.Cursor.HasNext != null && (bool)_results.Cursor.HasNext)
+            {
+                if (_results.Cursor.Next.Equals("1423584578589795:0:0"))
+                {
+                    Console.WriteLine("Old Cursors file reached. Please merge old and new");
+                    Console.ReadLine();
+                    Environment.Exit(0);
+                }
 
                 foreach (var feed in _results.Response)
                 {
@@ -245,7 +264,7 @@ namespace ForumUpdater
                 
                 _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
 
-                Console.WriteLine("Requests --->" + requestCounter++);
+                Console.WriteLine("Requests --->" + _requestCounter++);
                 Console.WriteLine("Updating next cursors");
             }
         }

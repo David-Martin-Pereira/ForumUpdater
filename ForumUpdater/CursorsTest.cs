@@ -51,5 +51,15 @@ namespace ForumUpdater
             Assert.AreEqual("ofaisjdpofjasodf", lastLine);
 
         }
+
+        [Test]
+        public void LengthMinus1_CorrectCut()
+        {
+            var testText = "blabla0:1";
+
+            var cuttedText = testText.Substring(0, testText.Length - 1)+"0";
+
+            Assert.AreEqual("blabla0:0",cuttedText);
+        }
     }
 }
