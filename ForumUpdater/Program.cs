@@ -44,7 +44,17 @@ namespace ForumUpdater
             {
                 Console.WriteLine("Load complete. Press enter key to continue");
                 Console.ReadLine();
-                UpdateForum();
+                while (_requestCounter<1000)
+                {
+                    if(_requestCounter<999)
+                        UpdateForum();
+                    else
+                    {
+                        Thread.Sleep(3600001);
+                        _requestCounter = 1;
+                    }
+                }
+                
             }
             else
             {
@@ -113,6 +123,7 @@ namespace ForumUpdater
 
         private static void UpdateForum()
         {
+
             //actualización de los 100 foros más interesantes de esta semana (por número de posts)
 
             StreamReader streamResultInteresting = null;
