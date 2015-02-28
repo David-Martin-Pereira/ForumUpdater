@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace ForumUpdater
@@ -104,7 +106,7 @@ namespace ForumUpdater
             }
 
             var jsonString = streamReader.ReadToEnd();
-            var results = JsonConvert.DeserializeObject<DisqusModel>(jsonString);
+            var results = JsonConvert.DeserializeObject<DisqusModel<DisqusFeed>>(jsonString);
 
             Console.WriteLine(jsonString);
 
@@ -112,6 +114,62 @@ namespace ForumUpdater
 
             //Assert.AreEqual(2, results.Code);
 
+        }
+
+        [Test]
+        public void InterestingForumsRequest_CorrectDeserealization()
+        {
+            string _urlInteresting =
+            "https://disqus.com/api/3.0/forums/interestingForums.json?api_key=ytwDh9f4ndTA027jIPzMAFC0hXdeyEEwOsKjujADneiRl2SUdjUpQ40bEXDMhupa&limit=100";
+
+            var ForumsInteresting =
+                JsonConvert.DeserializeObject<DisqusModel<InterestingForums>>(
+                    new StreamReader(WebRequest.Create(_urlInteresting).GetResponse().GetResponseStream()).ReadToEnd());
+
+
+            var interestingForums = ForumsInteresting.Response;
+
+            //foreach (var item in interestingForums.Items)
+            //{
+            //    Console.WriteLine(item.Id+" "+item.Reason);
+            //}
+
+            var innerJson = interestingForums.Objects;
+
+            var jo = JObject.Parse(innerJson.ToString());
+
+            var children = jo.Children();
+
+            var counter = 0;
+            foreach (var child in children)
+            {
+                foreach (var propiedades in child)
+                {
+                    var foro = propiedades.SelectToken("id").ToString();
+                    var link = propiedades.SelectToken("url").ToString();
+                     
+                    Console.WriteLine(link+" "+foro);
+                    
+                }
+                counter++;
+            }
+
+            Assert.AreEqual(100,counter);
+        }
+
+        [Test]
+        public void DisqusRequest_CorrectParse()
+        {
+            var url = "https://disqus.com/api/3.0/threads/list.json?api_key=ytwDh9f4ndTA027jIPzMAFC0hXdeyEEwOsKjujADneiRl2SUdjUpQ40bEXDMhupa&limit=100";
+
+            var foros = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(new StreamReader(WebRequest.Create(url).GetResponse().GetResponseStream()).ReadToEnd());
+
+            foreach (var foro in foros.Response)
+            {
+                Console.WriteLine(foro.Forum + " " + foro.Link);
+            }
+
+            
         }
     }
 }

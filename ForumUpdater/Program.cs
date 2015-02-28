@@ -5,21 +5,25 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace ForumUpdater
 {
     public static class Program
     {
-        private const string FileCursors = "../../Cursors.txt";
+        private const string FileCursors = "../../Cursors - 2.txt";
+        private const string FileCursorsOld = "../../Cursors.txt";
         private const string FileForums = "../../Forums.txt";
         private static string _url = "https://disqus.com/api/3.0/threads/list.json?api_key=ytwDh9f4ndTA027jIPzMAFC0hXdeyEEwOsKjujADneiRl2SUdjUpQ40bEXDMhupa&limit=100";
 
-        private static int requestCounter;
-        private static string firstCursor;
-        private static string lastCursor;
+        private const string UrlInteresting = "https://disqus.com/api/3.0/forums/interestingForums.json?api_key=ytwDh9f4ndTA027jIPzMAFC0hXdeyEEwOsKjujADneiRl2SUdjUpQ40bEXDMhupa&limit=100";
+
+        private static int _requestCounter;
+        private static string _firstCursor;
+        private static string _lastCursor;
         private static StreamReader _streamResult;
         private static string _jsonString;
-        private static DisqusModel _results;
+        private static DisqusModel<IEnumerable<DisqusFeed>> _results;
         private static Dictionary<string, string> _forumDictionary;
         private static String[] _forumFileLines;
 
@@ -38,7 +42,17 @@ namespace ForumUpdater
             {
                 Console.WriteLine("Load complete. Press enter key to continue");
                 Console.ReadLine();
-                UpdateForum();
+                while (_requestCounter<1000)
+                {
+                    if(_requestCounter<999)
+                        UpdateForum();
+                    else
+                    {
+                        Thread.Sleep(3600001);
+                        _requestCounter = 1;
+                    }
+                }
+                
             }
             else
             {
@@ -54,24 +68,33 @@ namespace ForumUpdater
 
         private static bool PrepareDictionary()
         {
-            requestCounter = 0;
+            _requestCounter = 1;
 
             var result = true;
 
             var cursors = File.ReadAllLines(FileCursors);
 
-            firstCursor = cursors.First();
-            lastCursor = cursors.Last();
+            _firstCursor = cursors.First();
+            _lastCursor = cursors.Last();
 
-            _url += "&cursor=" + firstCursor;
-
-            // ReSharper disable once AssignNullToNotNullAttribute
-            _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
-            Console.WriteLine("Requests --->"+requestCounter++);
+            _url += "&cursor=" + _firstCursor;
+            
+            try
+            {
+                _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.ReadLine();
+                Environment.Exit(1);
+            }
+            
+            Console.WriteLine("Requests --->"+_requestCounter++);
 
             _jsonString = _streamResult.ReadToEnd();
 
-            _results = JsonConvert.DeserializeObject<DisqusModel>(_jsonString);
+            _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_jsonString);
 
             _forumDictionary = new Dictionary<string, string>();
 
@@ -98,8 +121,54 @@ namespace ForumUpdater
 
         private static void UpdateForum()
         {
+
+            //actualización de los 100 foros más interesantes de esta semana (por número de posts)
+
+            StreamReader streamResultInteresting = null;
+
+            try
+            {
+                streamResultInteresting = new StreamReader(WebRequest.Create(UrlInteresting).GetResponse().GetResponseStream());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.ReadLine();
+                Environment.Exit(1);
+            }
+
+            Console.WriteLine("Requests --->" + _requestCounter++);
+
+            var jsonStringInteresting = streamResultInteresting.ReadToEnd();
+
+            var resultsInteresting = JsonConvert.DeserializeObject<DisqusModel<InterestingForums>>(jsonStringInteresting);
+
+            var innerJson = resultsInteresting.Response.Objects;
+
+            var jo = JObject.Parse(innerJson.ToString());
+
+            var children = jo.Children();
+
+            foreach (var child in children)
+            {
+                foreach (var properties in child)
+                {
+                    var forum = properties.SelectToken("id").ToString();
+                    var link = properties.SelectToken("url").ToString();
+
+                    if (!_forumDictionary.ContainsKey(forum))
+                    {
+                        _forumDictionary.Add(forum, link);
+
+                        Console.WriteLine(link + " " + forum);
+
+                        File.AppendAllLines(FileForums, new[] { FixSemiColon(link) + ";" + forum });
+                    }
+                }
+            }
+
             //actualización de los cursores hacia atrás
-            while (_results.Cursor.HasPrev)
+            while (_results.Cursor.HasPrev != null && (bool)_results.Cursor.HasPrev)
             {
                 foreach (var feed in _results.Response)
                 {
@@ -115,32 +184,65 @@ namespace ForumUpdater
                 }
 
                 //reescritura del nuevo cursor hacia arriba (es previo)
-                File.WriteAllText(FileCursors,_results.Cursor.Id+"\n"+File.ReadAllText(FileCursors));
+                if (!_firstCursor.Contains(_results.Cursor.Prev.Substring(0, _results.Cursor.Prev.Length - 1)))
+                    File.WriteAllText(FileCursors,_results.Cursor.Prev.Substring(0,_results.Cursor.Prev.Length-1)+"0"+"\n"+File.ReadAllText(FileCursors));
 
                 //reemplazo del parámetro "cursor"
                 _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
 
                 _url += "&cursor=" + _results.Cursor.Prev;
 
-                // ReSharper disable once AssignNullToNotNullAttribute
+                try
+                {
+                    _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                    Console.ReadLine();
+                    Environment.Exit(1);
+                }
+                
+                _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
 
-                _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
-                _results = JsonConvert.DeserializeObject<DisqusModel>(_streamResult.ReadToEnd());
-
-                Console.WriteLine("Requests --->" + requestCounter++);
+                Console.WriteLine("Requests --->" + _requestCounter++);
                 Console.WriteLine("Updating previous cursors");
             }
 
             //reemplazo del parámetro "cursor"
             _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
 
-            _url += "&cursor=" + lastCursor;
+            _url += "&cursor=" + _lastCursor;
+
 
             Console.WriteLine("Present time reached. Updating next cursors");
-            //actualización de los cursores hacia delante
-            // ReSharper disable once LoopVariableIsNeverChangedInsideLoop
-            while (_results.Cursor.HasNext)
+
+            try
             {
+                _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.ReadLine();
+                Environment.Exit(1);
+            }
+
+            _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
+
+            
+            //actualización de los cursores hacia delante (del archivo Cursors - 2.txt, cuando alcance al primero del siguiente pararemos)
+            while (_results.Cursor.HasNext != null && (bool)_results.Cursor.HasNext)
+            {
+                if (_results.Cursor.Next.Equals("1423584578589795:0:0"))
+                {
+                    Console.WriteLine("Old Cursors file reached. Old and new will be merged");
+                    var textNewFileCursors = File.ReadAllText(FileCursors);
+                    File.WriteAllText(FileCursorsOld, textNewFileCursors.Substring(0,textNewFileCursors.Length-1) + File.ReadAllText(FileCursorsOld));
+                    Console.WriteLine("Files merged");
+                    Console.ReadLine();
+                    Environment.Exit(0);
+                }
 
                 foreach (var feed in _results.Response)
                 {
@@ -162,12 +264,21 @@ namespace ForumUpdater
 
                 _url += "&cursor=" + _results.Cursor.Next;
 
-                // ReSharper disable once AssignNullToNotNullAttribute
-                
-                _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
-                _results = JsonConvert.DeserializeObject<DisqusModel>(_streamResult.ReadToEnd());
+                try
+                {
+                    _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                    Console.ReadLine();
+                    Environment.Exit(1);
+                }
 
-                Console.WriteLine("Requests --->" + requestCounter++);
+                
+                _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
+
+                Console.WriteLine("Requests --->" + _requestCounter++);
                 Console.WriteLine("Updating next cursors");
             }
         }
