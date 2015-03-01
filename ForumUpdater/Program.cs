@@ -111,9 +111,9 @@ namespace ForumUpdater
 
         private static void UpdateForum()
         {
-            while (_requestCounter < 1000)
+            while (_requestCounter < 999)
             {
-                if (_requestCounter < 999)
+                if (_requestCounter < 998)
                 {
 
                     //actualización de los 100 foros más interesantes de esta semana (por número de posts)
@@ -163,9 +163,12 @@ namespace ForumUpdater
                         }
                     }
 
+                    
                     //actualización de los cursores hacia atrás
                     while (_results.Cursor.HasPrev != null && (bool) _results.Cursor.HasPrev)
                     {
+                        if (_requestCounter > 998) break;
+
                         foreach (var feed in _results.Response)
                         {
                             if (!_forumDictionary.ContainsKey(feed.Forum))
@@ -235,6 +238,8 @@ namespace ForumUpdater
                     //actualización de los cursores hacia delante (del archivo Cursors - 2.txt, cuando alcance al primero del siguiente pararemos)
                     while (_results.Cursor.HasNext != null && (bool) _results.Cursor.HasNext)
                     {
+                        if (_requestCounter > 998) break;
+
                         if (_results.Cursor.Next.Equals("1423584578589795:0:0"))
                         {
                             Console.WriteLine("Old Cursors file reached. Old and new will be merged");
@@ -290,6 +295,7 @@ namespace ForumUpdater
                 else
                 {
                     Thread.Sleep(3600001);
+                    Console.WriteLine("Request limit per hour reached, waiting to proceed again");
                     _requestCounter = 1;
                 }
             }
