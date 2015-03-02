@@ -42,17 +42,7 @@ namespace ForumUpdater
             {
                 Console.WriteLine("Load complete. Press enter key to continue");
                 Console.ReadLine();
-                while (_requestCounter<1000)
-                {
-                    if(_requestCounter<999)
-                        UpdateForum();
-                    else
-                    {
-                        Thread.Sleep(3600001);
-                        _requestCounter = 1;
-                    }
-                }
-                
+                UpdateForum();
             }
             else
             {
@@ -121,167 +111,196 @@ namespace ForumUpdater
 
         private static void UpdateForum()
         {
-
-            //actualización de los 100 foros más interesantes de esta semana (por número de posts)
-
-            StreamReader streamResultInteresting = null;
-
-            try
+            while (_requestCounter < 999)
             {
-                streamResultInteresting = new StreamReader(WebRequest.Create(UrlInteresting).GetResponse().GetResponseStream());
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-                Console.ReadLine();
-                Environment.Exit(1);
-            }
-
-            Console.WriteLine("Requests --->" + _requestCounter++);
-
-            var jsonStringInteresting = streamResultInteresting.ReadToEnd();
-
-            var resultsInteresting = JsonConvert.DeserializeObject<DisqusModel<InterestingForums>>(jsonStringInteresting);
-
-            var innerJson = resultsInteresting.Response.Objects;
-
-            var jo = JObject.Parse(innerJson.ToString());
-
-            var children = jo.Children();
-
-            foreach (var child in children)
-            {
-                foreach (var properties in child)
+                if (_requestCounter < 998)
                 {
-                    var forum = properties.SelectToken("id").ToString();
-                    var link = properties.SelectToken("url").ToString();
 
-                    if (!_forumDictionary.ContainsKey(forum))
+                    //actualización de los 100 foros más interesantes de esta semana (por número de posts)
+
+                    StreamReader streamResultInteresting = null;
+
+                    try
                     {
-                        _forumDictionary.Add(forum, link);
-
-                        Console.WriteLine(link + " " + forum);
-
-                        File.AppendAllLines(FileForums, new[] { FixSemiColon(link) + ";" + forum });
+                        streamResultInteresting =
+                            new StreamReader(WebRequest.Create(UrlInteresting).GetResponse().GetResponseStream());
                     }
-                }
-            }
-
-            //actualización de los cursores hacia atrás
-            while (_results.Cursor.HasPrev != null && (bool)_results.Cursor.HasPrev)
-            {
-                foreach (var feed in _results.Response)
-                {
-                    if (!_forumDictionary.ContainsKey(feed.Forum))
+                    catch (Exception e)
                     {
-                        _forumDictionary.Add(feed.Forum, feed.Link);
-
-                        Console.WriteLine(feed.Link + " " + feed.Forum);
-
-                        File.AppendAllLines(FileForums, new[] { FixSemiColon(feed.Link) + ";" + feed.Forum });
+                        Console.WriteLine(e.Message);
+                        Console.ReadLine();
+                        Environment.Exit(1);
                     }
 
-                }
+                    Console.WriteLine("Requests --->" + _requestCounter++);
 
-                //reescritura del nuevo cursor hacia arriba (es previo)
-                if (!_firstCursor.Contains(_results.Cursor.Prev.Substring(0, _results.Cursor.Prev.Length - 1)))
-                    File.WriteAllText(FileCursors,_results.Cursor.Prev.Substring(0,_results.Cursor.Prev.Length-1)+"0"+"\n"+File.ReadAllText(FileCursors));
+                    var jsonStringInteresting = streamResultInteresting.ReadToEnd();
 
-                //reemplazo del parámetro "cursor"
-                _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
+                    var resultsInteresting =
+                        JsonConvert.DeserializeObject<DisqusModel<InterestingForums>>(jsonStringInteresting);
 
-                _url += "&cursor=" + _results.Cursor.Prev;
+                    var innerJson = resultsInteresting.Response.Objects;
 
-                try
-                {
-                    _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                    Console.ReadLine();
-                    Environment.Exit(1);
-                }
-                
-                _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
+                    var jo = JObject.Parse(innerJson.ToString());
 
-                Console.WriteLine("Requests --->" + _requestCounter++);
-                Console.WriteLine("Updating previous cursors");
-            }
+                    var children = jo.Children();
 
-            //reemplazo del parámetro "cursor"
-            _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
-
-            _url += "&cursor=" + _lastCursor;
-
-
-            Console.WriteLine("Present time reached. Updating next cursors");
-
-            try
-            {
-                _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-                Console.ReadLine();
-                Environment.Exit(1);
-            }
-
-            _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
-
-            
-            //actualización de los cursores hacia delante (del archivo Cursors - 2.txt, cuando alcance al primero del siguiente pararemos)
-            while (_results.Cursor.HasNext != null && (bool)_results.Cursor.HasNext)
-            {
-                if (_results.Cursor.Next.Equals("1423584578589795:0:0"))
-                {
-                    Console.WriteLine("Old Cursors file reached. Old and new will be merged");
-                    var textNewFileCursors = File.ReadAllText(FileCursors);
-                    File.WriteAllText(FileCursorsOld, textNewFileCursors.Substring(0,textNewFileCursors.Length-1) + File.ReadAllText(FileCursorsOld));
-                    Console.WriteLine("Files merged");
-                    Console.ReadLine();
-                    Environment.Exit(0);
-                }
-
-                foreach (var feed in _results.Response)
-                {
-                    if (!_forumDictionary.ContainsKey(feed.Forum))
+                    foreach (var child in children)
                     {
-                        _forumDictionary.Add(feed.Forum, feed.Link);
+                        foreach (var properties in child)
+                        {
+                            var forum = properties.SelectToken("id").ToString();
+                            var link = properties.SelectToken("url").ToString();
 
-                        Console.WriteLine(feed.Link + " " + feed.Forum);
+                            if (!_forumDictionary.ContainsKey(forum))
+                            {
+                                _forumDictionary.Add(forum, link);
 
-                        File.AppendAllLines(FileForums, new[] { FixSemiColon(feed.Link) + ";" + feed.Forum });
+                                Console.WriteLine(link + " " + forum);
+
+                                File.AppendAllLines(FileForums, new[] {FixSemiColon(link) + ";" + forum});
+                            }
+                        }
                     }
 
+                    
+                    //actualización de los cursores hacia atrás
+                    while (_results.Cursor.HasPrev != null && (bool) _results.Cursor.HasPrev)
+                    {
+                        if (_requestCounter > 998) break;
+
+                        foreach (var feed in _results.Response)
+                        {
+                            if (!_forumDictionary.ContainsKey(feed.Forum))
+                            {
+                                _forumDictionary.Add(feed.Forum, feed.Link);
+
+                                Console.WriteLine(feed.Link + " " + feed.Forum);
+
+                                File.AppendAllLines(FileForums, new[] {FixSemiColon(feed.Link) + ";" + feed.Forum});
+                            }
+
+                        }
+
+                        //reescritura del nuevo cursor hacia arriba (es previo)
+                        if (!_firstCursor.Contains(_results.Cursor.Prev.Substring(0, _results.Cursor.Prev.Length - 1)))
+                            File.WriteAllText(FileCursors,
+                                _results.Cursor.Prev.Substring(0, _results.Cursor.Prev.Length - 1) + "0" + "\n" +
+                                File.ReadAllText(FileCursors));
+
+                        //reemplazo del parámetro "cursor"
+                        _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
+
+                        _url += "&cursor=" + _results.Cursor.Prev;
+
+                        try
+                        {
+                            _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e.Message);
+                            Console.ReadLine();
+                            Environment.Exit(1);
+                        }
+
+                        _results =
+                            JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(
+                                _streamResult.ReadToEnd());
+
+                        Console.WriteLine("Requests --->" + _requestCounter++);
+                        Console.WriteLine("Updating previous cursors");
+                    }
+
+                    //reemplazo del parámetro "cursor"
+                    _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
+
+                    _url += "&cursor=" + _lastCursor;
+
+
+                    Console.WriteLine("Present time reached. Updating next cursors");
+
+                    try
+                    {
+                        _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e.Message);
+                        Console.ReadLine();
+                        Environment.Exit(1);
+                    }
+
+                    _results =
+                        JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
+
+
+                    //actualización de los cursores hacia delante (del archivo Cursors - 2.txt, cuando alcance al primero del siguiente pararemos)
+                    while (_results.Cursor.HasNext != null && (bool) _results.Cursor.HasNext)
+                    {
+                        if (_requestCounter > 998) break;
+
+                        if (_results.Cursor.Next.Equals("1423584578589795:0:0"))
+                        {
+                            Console.WriteLine("Old Cursors file reached. Old and new will be merged");
+                            var textNewFileCursors = File.ReadAllText(FileCursors);
+                            File.WriteAllText(FileCursorsOld,
+                                textNewFileCursors.Substring(0, textNewFileCursors.Length - 1) +
+                                File.ReadAllText(FileCursorsOld));
+                            Console.WriteLine("Files merged");
+                            Console.ReadLine();
+                            Environment.Exit(0);
+                        }
+
+                        foreach (var feed in _results.Response)
+                        {
+                            if (!_forumDictionary.ContainsKey(feed.Forum))
+                            {
+                                _forumDictionary.Add(feed.Forum, feed.Link);
+
+                                Console.WriteLine(feed.Link + " " + feed.Forum);
+
+                                File.AppendAllLines(FileForums, new[] {FixSemiColon(feed.Link) + ";" + feed.Forum});
+                            }
+
+                        }
+                        //añadir nuevo cursor al final (es el siguiente)
+                        File.AppendAllLines(FileCursors, new[] {_results.Cursor.Id});
+
+                        //reemplazo del parámetro "cursor"
+                        _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
+
+                        _url += "&cursor=" + _results.Cursor.Next;
+
+                        try
+                        {
+                            _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e.Message);
+                            Console.ReadLine();
+                            Environment.Exit(1);
+                        }
+
+
+                        _results =
+                            JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(
+                                _streamResult.ReadToEnd());
+
+                        Console.WriteLine("Requests --->" + _requestCounter++);
+                        Console.WriteLine("Updating next cursors");
+                    }
                 }
-                //añadir nuevo cursor al final (es el siguiente)
-                File.AppendAllLines(FileCursors, new[] { _results.Cursor.Id });
-
-                //reemplazo del parámetro "cursor"
-                _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
-
-                _url += "&cursor=" + _results.Cursor.Next;
-
-                try
+                else
                 {
-                    _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+                    Thread.Sleep(3600001);
+                    Console.WriteLine("Request limit per hour reached, waiting to proceed again");
+                    _requestCounter = 1;
                 }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                    Console.ReadLine();
-                    Environment.Exit(1);
-                }
-
-                
-                _results = JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
-
-                Console.WriteLine("Requests --->" + _requestCounter++);
-                Console.WriteLine("Updating next cursors");
             }
+
         }
-        
+
     }
 }
