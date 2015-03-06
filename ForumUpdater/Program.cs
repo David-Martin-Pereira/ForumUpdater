@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -111,9 +112,9 @@ namespace ForumUpdater
 
         private static void UpdateForum()
         {
-            while (_requestCounter < 999)
+            while (_requestCounter < 1000)
             {
-                if (_requestCounter < 998)
+                if (_requestCounter < 999)
                 {
 
                     //actualización de los 100 foros más interesantes de esta semana (por número de posts)
@@ -152,7 +153,7 @@ namespace ForumUpdater
                             var forum = properties.SelectToken("id").ToString();
                             var link = properties.SelectToken("url").ToString();
 
-                            if (!_forumDictionary.ContainsKey(forum))
+                            if (!_forumDictionary.ContainsKey(forum) &&!UrlContainsDisqusDotCom(link))
                             {
                                 _forumDictionary.Add(forum, link);
 
@@ -167,11 +168,11 @@ namespace ForumUpdater
                     //actualización de los cursores hacia atrás
                     while (_results.Cursor.HasPrev != null && (bool) _results.Cursor.HasPrev)
                     {
-                        if (_requestCounter > 998) break;
+                        if (_requestCounter > 997) break;
 
                         foreach (var feed in _results.Response)
                         {
-                            if (!_forumDictionary.ContainsKey(feed.Forum))
+                            if (!_forumDictionary.ContainsKey(feed.Forum) && !UrlContainsDisqusDotCom(feed.Link))
                             {
                                 _forumDictionary.Add(feed.Forum, feed.Link);
 
@@ -211,7 +212,7 @@ namespace ForumUpdater
                         Console.WriteLine("Requests --->" + _requestCounter++);
                         Console.WriteLine("Updating previous cursors");
                     }
-
+                    
                     //reemplazo del parámetro "cursor"
                     _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
 
@@ -238,7 +239,7 @@ namespace ForumUpdater
                     //actualización de los cursores hacia delante (del archivo Cursors - 2.txt, cuando alcance al primero del siguiente pararemos)
                     while (_results.Cursor.HasNext != null && (bool) _results.Cursor.HasNext)
                     {
-                        if (_requestCounter > 998) break;
+                        if (_requestCounter > 997) break;
 
                         if (_results.Cursor.Next.Equals("1423584578589795:0:0"))
                         {
@@ -254,7 +255,7 @@ namespace ForumUpdater
 
                         foreach (var feed in _results.Response)
                         {
-                            if (!_forumDictionary.ContainsKey(feed.Forum))
+                            if (!_forumDictionary.ContainsKey(feed.Forum) && !UrlContainsDisqusDotCom(feed.Link))
                             {
                                 _forumDictionary.Add(feed.Forum, feed.Link);
 
@@ -294,13 +295,19 @@ namespace ForumUpdater
                 }
                 else
                 {
-                    Thread.Sleep(3600001);
                     Console.WriteLine("Request limit per hour reached, waiting to proceed again");
+                    Thread.Sleep(3600001);
                     _requestCounter = 1;
                 }
             }
 
         }
 
+        public static bool UrlContainsDisqusDotCom(string url)
+        {
+            const string pattern = ".*disqus\\.com.*";
+
+            return Regex.IsMatch(url, pattern);
+        }
     }
 }

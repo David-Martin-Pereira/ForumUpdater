@@ -171,5 +171,21 @@ namespace ForumUpdater
 
             
         }
+
+        [Test]
+        public void UrlContainsDisqus_urlWithIt_ReturnsTrue()
+        {
+            const string url = "http://ejemplo.disqus.com/blabla";
+
+            Assert.IsTrue(Program.UrlContainsDisqusDotCom(url));
+        }
+
+        [Test]
+        public void UrlContainsDisqus_urlWithoutIt_ReturnsFalse()
+        {
+            const string url = "http://ejemplo.com/blabla";
+
+            Assert.IsFalse(Program.UrlContainsDisqusDotCom(url));
+        }
     }
 }
