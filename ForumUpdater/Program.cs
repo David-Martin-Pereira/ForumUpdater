@@ -12,10 +12,11 @@ namespace ForumUpdater
 {
     public static class Program
     {
-        private const string FileCursors = "../../Cursors - 2.txt";
+        private const string FileCursors = "../../Cursors - 3.txt";
+        private const string FileCursorsMedium = "../../Cursors - 2.txt";
         private const string FileCursorsOld = "../../Cursors.txt";
         private const string FileForums = "../../Forums.txt";
-        private static string _url = "https://disqus.com/api/3.0/threads/list.json?api_key=ytwDh9f4ndTA027jIPzMAFC0hXdeyEEwOsKjujADneiRl2SUdjUpQ40bEXDMhupa&limit=100";
+        private static string _url = "https://disqus.com/api/3.0/threads/list.json?api_key=ytwDh9f4ndTA027jIPzMAFC0hXdeyEEwOsKjujADneiRl2SUdjUpQ40bEXDMhupa&limit=100&cursor=";
 
         private const string UrlInteresting = "https://disqus.com/api/3.0/forums/interestingForums.json?api_key=ytwDh9f4ndTA027jIPzMAFC0hXdeyEEwOsKjujADneiRl2SUdjUpQ40bEXDMhupa&limit=100";
 
@@ -68,6 +69,7 @@ namespace ForumUpdater
             _firstCursor = cursors.First();
             _lastCursor = cursors.Last();
 
+            _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
             _url += "&cursor=" + _firstCursor;
             
             try
@@ -246,13 +248,13 @@ namespace ForumUpdater
                         {
                             if (_requestCounter > 997) break;
 
-                            if (_results.Cursor.Next.Equals("1423584578589795:0:0"))
+                            if (_results.Cursor.Next.Equals("1424976259673728:0:0"))
                             {
                                 Console.WriteLine("Old Cursors file reached. Old and new will be merged");
                                 var textNewFileCursors = File.ReadAllText(FileCursors);
-                                File.WriteAllText(FileCursorsOld,
+                                File.WriteAllText(FileCursorsMedium,
                                     textNewFileCursors.Substring(0, textNewFileCursors.Length - 1) +
-                                    File.ReadAllText(FileCursorsOld));
+                                    File.ReadAllText(FileCursorsMedium));
                                 Console.WriteLine("Files merged");
                                 Console.ReadLine();
                                 Environment.Exit(0);
