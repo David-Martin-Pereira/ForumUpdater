@@ -212,66 +212,17 @@ namespace ForumUpdater
                         Console.WriteLine("Requests --->" + _requestCounter++);
                         Console.WriteLine("Updating previous cursors");
                     }
-                    
-                    //reemplazo del parámetro "cursor"
-                    _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
 
-                    _url += "&cursor=" + _lastCursor;
-
-
-                    Console.WriteLine("Present time reached. Updating next cursors");
-
-                    try
+                    if ((bool) !_results.Cursor.HasPrev)
                     {
-                        _streamResult = new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e.Message);
-                        Console.ReadLine();
-                        Environment.Exit(1);
-                    }
-
-                    _results =
-                        JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(_streamResult.ReadToEnd());
-
-
-                    //actualización de los cursores hacia delante (del archivo Cursors - 2.txt, cuando alcance al primero del siguiente pararemos)
-                    while (_results.Cursor.HasNext != null && (bool) _results.Cursor.HasNext)
-                    {
-                        if (_requestCounter > 997) break;
-
-                        if (_results.Cursor.Next.Equals("1423584578589795:0:0"))
-                        {
-                            Console.WriteLine("Old Cursors file reached. Old and new will be merged");
-                            var textNewFileCursors = File.ReadAllText(FileCursors);
-                            File.WriteAllText(FileCursorsOld,
-                                textNewFileCursors.Substring(0, textNewFileCursors.Length - 1) +
-                                File.ReadAllText(FileCursorsOld));
-                            Console.WriteLine("Files merged");
-                            Console.ReadLine();
-                            Environment.Exit(0);
-                        }
-
-                        foreach (var feed in _results.Response)
-                        {
-                            if (!_forumDictionary.ContainsKey(feed.Forum) && !UrlContainsDisqusDotCom(feed.Link))
-                            {
-                                _forumDictionary.Add(feed.Forum, feed.Link);
-
-                                Console.WriteLine(feed.Link + " " + feed.Forum);
-
-                                File.AppendAllLines(FileForums, new[] {FixSemiColon(feed.Link) + ";" + feed.Forum});
-                            }
-
-                        }
-                        //añadir nuevo cursor al final (es el siguiente)
-                        File.AppendAllLines(FileCursors, new[] {_results.Cursor.Id});
 
                         //reemplazo del parámetro "cursor"
                         _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
 
-                        _url += "&cursor=" + _results.Cursor.Next;
+                        _url += "&cursor=" + _lastCursor;
+
+
+                        Console.WriteLine("Present time reached. Updating next cursors");
 
                         try
                         {
@@ -284,20 +235,85 @@ namespace ForumUpdater
                             Environment.Exit(1);
                         }
 
-
                         _results =
                             JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(
                                 _streamResult.ReadToEnd());
 
-                        Console.WriteLine("Requests --->" + _requestCounter++);
-                        Console.WriteLine("Updating next cursors");
+
+
+                        //actualización de los cursores hacia delante (del archivo Cursors - 2.txt, cuando alcance al primero del siguiente pararemos)
+                        while (_results.Cursor.HasNext != null && (bool) _results.Cursor.HasNext)
+                        {
+                            if (_requestCounter > 997) break;
+
+                            if (_results.Cursor.Next.Equals("1423584578589795:0:0"))
+                            {
+                                Console.WriteLine("Old Cursors file reached. Old and new will be merged");
+                                var textNewFileCursors = File.ReadAllText(FileCursors);
+                                File.WriteAllText(FileCursorsOld,
+                                    textNewFileCursors.Substring(0, textNewFileCursors.Length - 1) +
+                                    File.ReadAllText(FileCursorsOld));
+                                Console.WriteLine("Files merged");
+                                Console.ReadLine();
+                                Environment.Exit(0);
+                            }
+
+                            foreach (var feed in _results.Response)
+                            {
+                                if (!_forumDictionary.ContainsKey(feed.Forum) && !UrlContainsDisqusDotCom(feed.Link))
+                                {
+                                    _forumDictionary.Add(feed.Forum, feed.Link);
+
+                                    Console.WriteLine(feed.Link + " " + feed.Forum);
+
+                                    File.AppendAllLines(FileForums, new[] {FixSemiColon(feed.Link) + ";" + feed.Forum});
+                                }
+
+                            }
+                            //añadir nuevo cursor al final (es el siguiente)
+                            File.AppendAllLines(FileCursors, new[] {_results.Cursor.Id});
+
+                            //reemplazo del parámetro "cursor"
+                            _url = _url.Substring(0, _url.IndexOf("&cursor=", StringComparison.Ordinal));
+
+                            _url += "&cursor=" + _results.Cursor.Next;
+
+                            try
+                            {
+                                _streamResult =
+                                    new StreamReader(WebRequest.Create(_url).GetResponse().GetResponseStream());
+                            }
+                            catch (Exception e)
+                            {
+                                Console.WriteLine(e.Message);
+                                Console.ReadLine();
+                                Environment.Exit(1);
+                            }
+
+
+                            _results =
+                                JsonConvert.DeserializeObject<DisqusModel<IEnumerable<DisqusFeed>>>(
+                                    _streamResult.ReadToEnd());
+
+                            Console.WriteLine("Requests --->" + _requestCounter++);
+                            Console.WriteLine("Updating next cursors");
+                        }
                     }
                 }
                 else
                 {
                     Console.WriteLine("Request limit per hour reached, waiting to proceed again");
                     Thread.Sleep(3600001);
-                    _requestCounter = 1;
+                    Console.WriteLine("Loading dictionary...");
+
+                    if (PrepareDictionary())
+                    {
+                    }
+                    else
+                    {
+                        Console.WriteLine("Load failed. Press enter key to exit");
+                        Console.ReadLine();
+                    }
                 }
             }
 
