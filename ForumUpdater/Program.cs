@@ -130,6 +130,7 @@ namespace ForumUpdater
                     }
                     catch (Exception e)
                     {
+                        Console.WriteLine("Error updating most interesting forums");
                         Console.WriteLine(e.Message);
                         Console.ReadLine();
                         Environment.Exit(1);
@@ -202,6 +203,7 @@ namespace ForumUpdater
                         }
                         catch (Exception e)
                         {
+                            Console.WriteLine("Error updating previous cursors");
                             Console.WriteLine(e.Message);
                             Console.ReadLine();
                             Environment.Exit(1);
@@ -232,6 +234,7 @@ namespace ForumUpdater
                         }
                         catch (Exception e)
                         {
+                            Console.WriteLine("Error in the transition to next cursors");
                             Console.WriteLine(e.Message);
                             Console.ReadLine();
                             Environment.Exit(1);
@@ -287,6 +290,7 @@ namespace ForumUpdater
                             }
                             catch (Exception e)
                             {
+                                Console.WriteLine("Error updating next cursors");
                                 Console.WriteLine(e.Message);
                                 Console.ReadLine();
                                 Environment.Exit(1);
