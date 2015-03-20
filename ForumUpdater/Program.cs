@@ -309,7 +309,7 @@ namespace ForumUpdater
                 else
                 {
                     Console.WriteLine("Request limit per hour reached, waiting to proceed again");
-                    Thread.Sleep(3600001);
+                    Thread.Sleep(2400000);
                     Console.WriteLine("Loading dictionary...");
 
                     if (PrepareDictionary())
